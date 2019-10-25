@@ -3,6 +3,11 @@
 # config
 default_semvar_bump=${DEFAULT_BUMP:-minor}
 with_v=${WITH_V:-false}
+release_branch=${RELEASE_BRANCH:-master}
+if [ "${GITHUB_REF#'refs/heads/'}" = $release_branch ]
+then 
+    pre_release = "true"
+fi
 
 # get latest tag
 tag=$(git describe --tags `git rev-list --tags --max-count=1`)
@@ -40,10 +45,21 @@ then
     new="v$new"
 fi
 
+if $pre_release
+then
+    new="$new-${commit:0:7}"
+fi
+
 echo $new
 
 # set output
 echo ::set-output name=new_tag::$new
+
+if $pre_release
+then
+    echo "This branch is not a release branch. Skipping the tag creation."
+    exit 0
+fi
 
 # push new tag ref to github
 dt=$(date '+%Y-%m-%dT%H:%M:%SZ')
